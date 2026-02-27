@@ -1,0 +1,19 @@
+{
+  "name": "shopify-orders-api",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@shopify/shopify-api": "^12.3.0",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1"
+  }
+}
