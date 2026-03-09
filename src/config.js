@@ -6,7 +6,7 @@ const config = {
     storeDomain: process.env.SHOPIFY_STORE_DOMAIN,
     accessToken: process.env.SHOPIFY_ACCESS_TOKEN,
   },
-  port: process.env.PORT || 3000,
+  port: process.env.PORT || 30001,
 };
 
 if (!config.shopify.storeDomain || !config.shopify.accessToken) {

@@ -89,8 +89,8 @@ function getRegion(countryCode) {
   return REGION_MAP[countryCode] || "";
 }
 
-// Build flat rows: 1 row per line item
-function mapOrderToFlatRows(order) {
+// Build a grouped order object with nested products array
+function mapOrderToGrouped(order) {
   const customer = order.customer;
   const shipAddr = order.shipping_address || {};
   const billAddr = order.billing_address || {};
@@ -118,8 +118,19 @@ function mapOrderToFlatRows(order) {
     (sum, sl) => sum + toUsdInt(sl.price), 0
   );
 
-  // Shared order-level fields
-  const orderFields = {
+  // Products array
+  const products = lineItems.length === 0
+    ? [{ productId: "", sku: "", quantity: 0, productName: "", airtableId: "", price: 0 }]
+    : lineItems.map((item) => ({
+        productId: String(item.product_id || ""),
+        sku: item.sku || "",
+        quantity: item.quantity || 1,
+        productName: item.title || item.name || "",
+        airtableId: "",
+        price: toUsdInt(item.price),
+      }));
+
+  return {
     userId: String(customer?.id || ""),
     userEmail: email,
     userName: customer
@@ -177,22 +188,15 @@ function mapOrderToFlatRows(order) {
     billToZipCode: billAddr.zip || "",
     billToPhone: billAddr.phone || "",
     billToEmail: email,
+    // Nested products
+    products,
   };
+}
 
-  // 1 row per line item
-  if (lineItems.length === 0) {
-    return [{ ...orderFields, productId: "", sku: "", quantity: 0, productName: "", airtableId: "", price: 0 }];
-  }
-
-  return lineItems.map((item) => ({
-    ...orderFields,
-    productId: String(item.product_id || ""),
-    sku: item.sku || "",
-    quantity: item.quantity || 1,
-    productName: item.title || item.name || "",
-    airtableId: "",
-    price: toUsdInt(item.price),
-  }));
+// Flatten a grouped order into 1 row per line item (for Excel export)
+function flattenGroupedOrder(grouped) {
+  const { products, ...orderFields } = grouped;
+  return products.map((product) => ({ ...orderFields, ...product }));
 }
 
 // Validate required fields; returns array of error messages
@@ -218,13 +222,16 @@ async function fetchAllOrders({ limit = 50 } = {}) {
     status: "any",
   });
 
-  const allRows = [];
-  for (const order of data.orders) {
-    const rows = mapOrderToFlatRows(order);
-    allRows.push(...rows);
-  }
+  return data.orders.map(mapOrderToGrouped);
+}
 
+// Flatten grouped orders into flat rows (for Excel export)
+function flattenOrders(groupedOrders) {
+  const allRows = [];
+  for (const order of groupedOrders) {
+    allRows.push(...flattenGroupedOrder(order));
+  }
   return allRows;
 }
 
-module.exports = { fetchAllOrders, validateRows, COLUMNS };
+module.exports = { fetchAllOrders, flattenOrders, validateRows, COLUMNS };

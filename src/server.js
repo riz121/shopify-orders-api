@@ -1,21 +1,20 @@
 const express = require("express");
 const ExcelJS = require("exceljs");
 const config = require("./config");
-const { fetchAllOrders, validateRows, COLUMNS } = require("./orderService");
+const { fetchAllOrders, flattenOrders, validateRows, COLUMNS } = require("./orderService");
 
 const app = express();
 
-// GET /api/orders — returns flat JSON (1 row per product line, 59 columns)
+// GET /api/orders — returns grouped JSON (1 object per order, products nested)
 app.get("/api/orders", async (req, res) => {
   try {
     const limit = Math.min(parseInt(req.query.limit) || 50, 250);
-    const rows = await fetchAllOrders({ limit });
+    const orders = await fetchAllOrders({ limit });
 
     res.json({
       success: true,
-      count: rows.length,
-      columns: COLUMNS.map((c) => c.key),
-      data: rows,
+      count: orders.length,
+      data: orders,
     });
   } catch (error) {
     console.error("Error fetching orders:", error.message);
@@ -27,7 +26,8 @@ app.get("/api/orders", async (req, res) => {
 app.get("/api/orders/export", async (req, res) => {
   try {
     const limit = Math.min(parseInt(req.query.limit) || 50, 250);
-    const rows = await fetchAllOrders({ limit });
+    const orders = await fetchAllOrders({ limit });
+    const rows = flattenOrders(orders);
 
     if (rows.length === 0) {
       return res.status(404).json({ success: false, error: "No orders found to export." });

@@ -1,6 +1,7 @@
 const config = require("./config");
 
 const BASE_URL = `https://${config.shopify.storeDomain}/admin/api/2024-10`;
+console.log("Shopify API Base URL:", BASE_URL);
 
 async function shopifyRest(endpoint, params = {}) {
   const url = new URL(`${BASE_URL}/${endpoint}.json`);
